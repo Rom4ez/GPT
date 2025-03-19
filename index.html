@@ -214,11 +214,11 @@
         <div class="chat-header">
             <select id="model-selector">
                 <option value="deepseek/deepseek-r1-distill-qwen-32b:free">DeepSeek</option>
-                <option value="google/gemini-pro:free">Gemini Pro</option>
+                <!-- Удаляем Google Gemini Pro -->
                 <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B</option>
                 <option value="meta-llama/llama-3.2-11b-vision-instruct:free">Llama 3.2 11B</option>
                 <option value="google/gemini-2.0-flash-thinking-exp:free">Gemini Flash</option>
-                <option value="qwen/qwen-2.5-coder-32b-instruct:free">QWEN Coder</option> <!-- Добавляем новую модель -->
+                <option value="qwen/qwen-2.5-coder-32b-instruct:free">QWEN Coder</option>
             </select>
             <div class="theme-switch" onclick="toggleTheme()">🌙</div>
         </div>
@@ -298,7 +298,7 @@
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer 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"
+                    "Authorization": "Bearer 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" // Новый ключ API
                 },
                 body: JSON.stringify({
                     model: model,
