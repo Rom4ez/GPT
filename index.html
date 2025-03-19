@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Чат</title>
+    <!-- Подключаем Prism.js с темой Tomorrow Night для лучшей читаемости -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #10a37f;
+            --bg-color: #ffffff;
+            --text-color: #1a1a1a;
+            --container-bg: #ffffff;
+            --input-bg: #f5f5f5;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #10a37f;
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --container-bg: #252525;
+            --input-bg: #333333;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            transition: var(--transition);
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--container-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .theme-switch {
+            cursor: pointer;
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .theme-switch:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            padding: 12px 18px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+            transition: var(--transition);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: var(--primary-color);
+            color: white;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        /* Стили для блока кода */
+        .code-block {
+            position: relative;
+            margin: 10px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 100%;
+            border: 1px solid #333;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 15px;
+            background: #2d2d2d;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            background: none;
+            padding: 0;
+            color: #f8f8f2;
+        }
+
+        .code-block .token.tag {
+            color: #ff79c6;
+        }
+
+        .code-block .token.attr-name {
+            color: #f1fa8c;
+        }
+
+        .code-block .token.attr-value {
+            color: #a5e844;
+        }
+
+        .code-block .token.string {
+            color: #a5e844;
+        }
+
+        .code-block .token.comment {
+            color: #6272a4;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background: #444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .copy-button:hover {
+            background: #666;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        select, input {
+            flex-grow: 1;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: none;
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <select id="model-selector">
+                <option value="deepseek/deepseek-r1-distill-qwen-32b:free">DeepSeek</option>
+                <option value="google/gemini-pro:free">Gemini Pro</option>
+                <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B</option>
+                <option value="meta-llama/llama-3.2-11b-vision-instruct:free">Llama 3.2 11B</option>
+                <option value="google/gemini-2.0-flash-thinking-exp:free">Gemini Flash</option>
+                <option value="qwen/qwen-2.5-coder-32b-instruct:free">QWEN Coder</option> <!-- Добавляем новую модель -->
+            </select>
+            <div class="theme-switch" onclick="toggleTheme()">🌙</div>
+        </div>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Введите сообщение...">
+            <button onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            body.dataset.theme = body.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.querySelector('.theme-switch').textContent = 
+                body.dataset.theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function copyCode(button) {
+            const code = button.parentElement.querySelector('code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                button.textContent = 'Скопировано!';
+                setTimeout(() => {
+                    button.textContent = 'Копировать';
+                }, 2000);
+            });
+        }
+
+        function extractCodeFromMarkdown(text) {
+            const codeBlockRegex = /```(\w+)?\n([\s\S]*?)\n```/g;
+            const matches = [];
+            let match;
+            while ((match = codeBlockRegex.exec(text)) !== null) {
+                matches.push({
+                    language: match[1] || 'html',
+                    code: match[2].trim()
+                });
+            }
+            return matches;
+        }
+
+        function isCodeBlock(text) {
+            return text.trim().startsWith('<!DOCTYPE') || 
+                   text.trim().startsWith('```') || 
+                   text.includes('<html>') || 
+                   text.includes('<script>') || 
+                   text.includes('function ') || 
+                   text.includes('const ') || 
+                   text.includes('let ') || 
+                   text.includes('var ') || 
+                   text.includes('<div') || 
+                   text.includes('<p') || 
+                   text.includes('<style') || 
+                   text.includes('class=') || 
+                   text.includes('id=');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const chatBox = document.getElementById("chat-box");
+            const model = document.getElementById("model-selector").value;
+            if (!input.value) return;
+            
+            const userMessage = document.createElement("div");
+            userMessage.className = "message user-message";
+            userMessage.textContent = input.value;
+            chatBox.appendChild(userMessage);
+            input.value = "";
+            
+            const responseMessage = document.createElement("div");
+            responseMessage.className = "message ai-message";
+            responseMessage.textContent = "Идёт генерация ответа...";
+            chatBox.appendChild(responseMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer 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"
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [{ role: "user", content: userMessage.textContent }]
+                })
+            });
+            
+            const data = await response.json();
+            const aiResponse = data.choices[0].message.content;
+
+            responseMessage.remove();
+
+            const codeBlocks = extractCodeFromMarkdown(aiResponse);
+            if (codeBlocks.length > 0) {
+                let lastIndex = 0;
+                const responseParts = aiResponse.split(/```[\w]*\n/);
+                responseParts.forEach((part, index) => {
+                    if (part.trim() && index > 0) {
+                        part = part.replace(/```/, '').trim();
+                        if (codeBlocks[Math.floor(index / 2)]) {
+                            const codeBlock = document.createElement("div");
+                            codeBlock.className = "code-block";
+                            
+                            const pre = document.createElement("pre");
+                            const code = document.createElement("code");
+                            code.className = `language-${codeBlocks[Math.floor(index / 2)].language}`;
+                            code.textContent = codeBlocks[Math.floor(index / 2)].code;
+                            pre.appendChild(code);
+                            
+                            const copyButton = document.createElement("button");
+                            copyButton.className = "copy-button";
+                            copyButton.textContent = "Копировать";
+                            copyButton.onclick = () => copyCode(copyButton);
+                            
+                            codeBlock.appendChild(pre);
+                            codeBlock.appendChild(copyButton);
+                            chatBox.appendChild(codeBlock);
+                        } else if (part.trim()) {
+                            const textMessage = document.createElement("div");
+                            textMessage.className = "message ai-message";
+                            textMessage.textContent = part;
+                            chatBox.appendChild(textMessage);
+                        }
+                    } else if (part.trim()) {
+                        const textMessage = document.createElement("div");
+                        textMessage.className = "message ai-message";
+                        textMessage.textContent = part;
+                        chatBox.appendChild(textMessage);
+                    }
+                });
+            } else if (isCodeBlock(aiResponse)) {
+                const codeBlock = document.createElement("div");
+                codeBlock.className = "code-block";
+                
+                const pre = document.createElement("pre");
+                const code = document.createElement("code");
+                code.className = "language-html";
+                code.textContent = aiResponse;
+                pre.appendChild(code);
+                
+                const copyButton = document.createElement("button");
+                copyButton.className = "copy-button";
+                copyButton.textContent = "Копировать";
+                copyButton.onclick = () => copyCode(copyButton);
+                
+                codeBlock.appendChild(pre);
+                codeBlock.appendChild(copyButton);
+                chatBox.appendChild(codeBlock);
+            } else {
+                const newResponseMessage = document.createElement("div");
+                newResponseMessage.className = "message ai-message";
+                newResponseMessage.textContent = aiResponse;
+                chatBox.appendChild(newResponseMessage);
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
